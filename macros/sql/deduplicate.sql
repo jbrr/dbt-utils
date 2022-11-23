@@ -32,7 +32,7 @@
 {# Redshift should use default instead of Postgres #}
 {% macro redshift__deduplicate(relation, partition_by, order_by) -%}
 
-{% set all_columns = adapter.get_columns_in_relation({{ relation }}) %}
+{% set all_columns = adapter.get_columns_in_relation(relation) %}
 
     with row_numbered as (
         select
