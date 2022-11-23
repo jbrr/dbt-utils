@@ -55,7 +55,7 @@
     #}
     join row_numbered as num
     {%- for col in all_columns %}
-    on ((data.'{{ col.name }}' = num.'{{ col.name }}') or (data.'{{ col.name }}' is null and num.'{{ col.name }}' is null))
+    on ((data.{{ col.name }} = num.{{ col.name }}) or (data.{{ col.name }} is null and num.{{ col.name }} is null))
     {% if not loop.last %} and {% endif %}
     {%- endfor %}
     where row_numbered.rn = 1
