@@ -32,7 +32,33 @@
 {# Redshift should use default instead of Postgres #}
 {% macro redshift__deduplicate(relation, partition_by, order_by) -%}
 
-    {{ return(dbt_utils.default__deduplicate(relation, partition_by, order_by=order_by)) }}
+{% set all_columns = adapter.get_columns_in_relation(ref(relation)) %}
+
+    with row_numbered as (
+        select
+            _inner.*,
+            row_number() over (
+                partition by {{ partition_by }}
+                order by {{ order_by }}
+            ) as rn
+        from {{ relation }} as _inner
+    )
+
+    select
+        distinct data.*
+    from {{ relation }} as data
+    {#
+    -- Redshift does not have great support for natural joins because
+    -- it doesn't compare null values with the equality operator
+    -- If any value is null, even if it's null in both tables, the
+    -- row won't be returned.
+    #}
+    join row_numbered as num
+    {%- for col in all_columns %}
+    on ((data.'{{ col.name }}' = num.'{{ col.name }}') or (data.'{{ col.name }}' is null and num.'{{ col.name }}' is null))
+    {% if not loop.last %} and {% endif %}
+    {%- endfor %}
+    where row_numbered.rn = 1
 
 {% endmacro %}
 
